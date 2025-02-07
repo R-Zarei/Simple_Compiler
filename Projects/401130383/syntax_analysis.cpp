@@ -6,11 +6,13 @@
 using namespace std;
 
 
+// Lexical Analyzer(Lexer) -------------------------------------
+
 vector<pair<string, string>> token_rules = {
     {"KEYWORD", R"(^\s*\b(Program|end|Var|Start|End|Print|Read|if|Iteration|Put)\b)"},
     {"IDENTIFIER", R"(^\s*([a-zA-Z_]\w*))"},
     {"NUMBER", R"(^\s*\b(\d+)\b)"},
-    {"OPERATOR", R"(^\s*(=|<|>|==|\+|-))"},
+    {"OPERATOR", R"(^\s*(==|<|>|=|\+|-))"},
     {"PUNCTUATION", R"(^\s*(;|\(|\)|\{|\}))"},
     {"BWS", R"(^\s*)"}
 }; 
@@ -64,33 +66,7 @@ vector<Token> lexers(string code) {
     return tokens;
 }
 
-// #######################################################################
-/*Token program_t {"program", "keyword"};
-Token var_t {"Var", "keyword"};*/
-
-/*void sync(vector<string> followSet, bool type = false) {
-    if (!type) {
-        while (currentIndex < tokens.size()) {
-            for (string follow : followSet) {
-                if (tokens[currentIndex].value == follow) {
-                    return;
-                }
-            }
-            currentIndex ++;
-        }
-    }
-    else {
-        while (currentIndex < tokens.size()) {
-            for (string follow : followSet) {
-                if (tokens[currentIndex].type == follow) {
-                    return;
-                }
-            }
-            currentIndex ++;
-        }
-    }
-}*/
-
+// Syntactic Analyzer(Parser) ---------------------------
 
 /*struct Token {
     string value;
@@ -106,14 +82,18 @@ bool error = false;
 
 
 void error_print(string message) {
-    cout << "line " << tokens[currentIndex].line << ": " << message << " but it's <" << tokens[currentIndex].value << ">\n";
+    if (currentIndex < tokens.size()) {
+        cout << "line " << tokens[currentIndex].line << ": " << message << " but it's <" << tokens[currentIndex].value << ">\n";
+    }
+    else {
+        cout << "line " << tokens[currentIndex - 1].line << ": " << message << endl;
+    }
 }
 
 
 bool match(Token expected, string error_text) {
     if (expected.type != "NUMBER" && expected.type != "IDENTIFIER") {
         if (currentIndex < tokens.size() && tokens[currentIndex].value == expected.value) {
-            //cout << tokens[currentIndex].line << ": " << endl; //
             currentIndex ++;
             return true;
         }
@@ -123,7 +103,6 @@ bool match(Token expected, string error_text) {
     }
     else {
         if (currentIndex < tokens.size() && tokens[currentIndex].type == expected.type) {
-            //cout << tokens[currentIndex].line << ": " << endl; //
             currentIndex ++;
             return true;
         }
@@ -209,7 +188,6 @@ bool vars() {
 
     else {
         error = true;
-        //currentIndex ++;
         error_print("Expected 'Var' or 'Start");
         sync({"Start"});
         return true;
@@ -239,7 +217,6 @@ bool block() {
                 return true;
             }
         }
-        //currentIndex ++;
         error_print("Expected <Start> for block definition");
         sync({"If", "Read", "Print", "Put", "Iteration", "end", "End"});
         return true;
@@ -275,13 +252,6 @@ bool state() {
     
     else {
         error = true;
-        vector<string> follow = {"End"};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }
-        //currentIndex ++;
         error_print("Unknown statement");
         sync({"End"});
         return true;
@@ -308,13 +278,6 @@ bool m_states() {
 
     else {
         error = true;
-        /*vector<string> follow = {"End"};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }*/
-        //currentIndex ++;
         error_print("Expected a statement or <End>");
         sync({"End"}); 
         return true;
@@ -340,13 +303,6 @@ bool out() {
     }
     else {
         error = true;
-        vector<string> follow = {"Start", "If", "Read", "Print", "Put", "Iteration", "End", ";"};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }
-        //currentIndex ++;
         error_print("it must be <Print>");
         sync({"Start", "If", "Read", "Print", "Put", "Iteration", "End"});
         return true;
@@ -372,14 +328,7 @@ bool in() {
 
     else {
         error = true;
-        vector<string> follow = {"Start", "If", "Read", "Print", "Put", "Iteration", "End", ";"};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }
         error_print("it must be <Read>");
-        //currentIndex ++;
         sync({"Start", "If", "Read", "Print", "Put", "Iteration", "End"});
         return true;
     }
@@ -409,14 +358,7 @@ bool _if() {
 
     else {
         error = true;
-        vector<string> follow = {"Start", "If", "Read", "Print", "Put", "Iteration", "End", ""};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }
         error_print("it must be <If>");
-        //currentIndex ++;
         sync({"Start", "If", "Read", "Print", "Put", "Iteration", "End"});
         return true;
     }
@@ -445,14 +387,7 @@ bool loop() {
     
     else {
         error = true;
-        vector<string> follow = {"Start", "If", "Read", "Print", "Put", "Iteration", "End", ""};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }
         error_print("it must be <Iteration>");
-        //currentIndex ++;
         sync({"Start", "If", "Read", "Print", "Put", "Iteration", "End"});
         return true;
     }
@@ -477,14 +412,7 @@ bool assign() {
 
     else {
         error = true;
-        vector<string> follow = {"Start", "If", "Read", "Print", "Put", "Iteration", "End", ";"};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }
         error_print("it must be <Put>");
-        //currentIndex ++;
         sync({"Start", "If", "Read", "Print", "Put", "Iteration", "End"});
         return true;
     }
@@ -513,18 +441,9 @@ bool o() {
         match(Token{"==", "OPERATOR"}, "it must be <OPERATOR>");
         return true;
     }
-        //return true;
 
     else {
         error = true;
-        vector<string> follow = {"NUMBER", "IDENTIFIER"};
-        for (string f : follow) {
-            if (tokens[currentIndex].type == f) {
-                return true;
-            }
-        }
-        error_print("it must be <OPERATOR>");
-        //currentIndex ++;
         error_print("it must be <OPERATOR>");
         sync({"NUMBER", "IDENTIFIER"});
         return true;
@@ -545,14 +464,7 @@ bool expr() {
 
     else {
         error = true;
-        vector<string> follow = {";", ")", "<", ">", "=="};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }
         error_print("Expected an expression");
-        //currentIndex ++;
         sync({";", ")", "<", ">", "=="});
         return true;
     }
@@ -589,13 +501,6 @@ bool expr_p() {
 
     else {
         error = true;
-        /*vector<string> follow = {";", ")", "<", ">", "=="};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }*/
-        //currentIndex ++;
         error_print("Expected <+>, <->, or end of expression");
         error_print("it must be <OPERATOR>");
         sync({";", ")", "<", ">", "=="});
@@ -623,13 +528,6 @@ bool r() {
     
     else {
         error = true;
-        vector<string> follow = {";", ")", "+", "-", "<", ">", "=="};
-        for (string f : follow) {
-            if (tokens[currentIndex].value == f) {
-                return true;
-            }
-        }
-        //currentIndex ++;
         error_print("it must be <NUMBER> or <IDENTIFIER>");
         sync({";", ")", "+", "-", "<", ">", "=="});
         return true;
@@ -652,5 +550,6 @@ int main() {
     s();
     cout <<"Error: " << error << '\n';
 
+    cin >> temp;
     return 0;
 }
